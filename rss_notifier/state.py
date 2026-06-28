@@ -47,21 +47,21 @@ class StateManager:
             状态字典，key 为 RSS 名称，value 为最后处理的文章 ID。
         """
         if not self._path.exists():
-            logger.info("State file not found, starting fresh.")
+            logger.debug("State file not found, starting fresh.")
             self._state = {}
             self._original = {}
             return self._state
 
         content = self._path.read_text(encoding="utf-8").strip()
         if not content:
-            logger.info("State file is empty, starting fresh.")
+            logger.debug("State file is empty, starting fresh.")
             self._state = {}
             self._original = {}
             return self._state
 
         self._state = json.loads(content)
         self._original = dict(self._state)
-        logger.info("Loaded state: %d feed(s).", len(self._state))
+        logger.debug("Loaded state: %d feed(s).", len(self._state))
         return self._state
 
     def save(self) -> bool:
@@ -71,14 +71,14 @@ class StateManager:
             True 表示文件已写入，False 表示无变化、未写入。
         """
         if self._state == self._original:
-            logger.info("State unchanged, skipping save.")
+            logger.debug("State unchanged, skipping save.")
             return False
 
         self._path.write_text(
             json.dumps(self._state, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-        logger.info("State saved to %s.", self._path)
+        logger.debug("State saved to %s.", self._path)
         return True
 
     def get_last_id(self, feed_name: str) -> str | None:

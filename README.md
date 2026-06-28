@@ -55,6 +55,7 @@
 | 邮箱 | SMTP_HOST | SMTP_PORT | 备注 |
 |---|---|---|---|
 | 163 邮箱 | `smtp.163.com` | `465` | 需开启 SMTP 并使用授权码 |
+| 126 邮箱 | `smtp.126.com` | `465` | 需开启 SMTP 并使用授权码 |
 | QQ 邮箱 | `smtp.qq.com` | `465` | 需开启 SMTP 并使用授权码 |
 | Gmail | `smtp.gmail.com` | `587` | 需开启应用密码或使用 STARTTLS |
 | Outlook | `smtp-mail.outlook.com` | `587` | 直接使用账号密码 |

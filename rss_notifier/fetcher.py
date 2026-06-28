@@ -24,7 +24,7 @@ def fetch_new_articles(
     """获取某个 RSS 源的新文章。
 
     从最新文章开始遍历，遇到 ``last_id`` 停止。
-    返回结果按时间从旧到新排列，保证阅读顺序正确。
+    返回结果按时间从新到旧排列，最新文章在前。
 
     Args:
         feed_name: RSS 源名称（用于日志和邮件分组）。
@@ -33,12 +33,12 @@ def fetch_new_articles(
                  为 None 时只返回最新一篇（适用于新增源）。
 
     Returns:
-        新文章列表，按发布时间从旧到新排序。
+        新文章列表，按发布时间从新到旧排序。
 
     Raises:
         ValueError: feedparser 解析失败时抛出。
     """
-    logger.info("Fetching: %s (%s)", feed_name, feed_url)
+    logger.debug("Fetching: %s (%s)", feed_name, feed_url)
 
     feed = feedparser.parse(feed_url)
 
@@ -47,7 +47,7 @@ def fetch_new_articles(
         raise ValueError(msg)
 
     if not feed.entries:
-        logger.info("No entries found for '%s'.", feed_name)
+        logger.debug("No entries found for '%s'.", feed_name)
         return []
 
     # feedparser 的 entries 通常是最新在前
@@ -57,7 +57,7 @@ def fetch_new_articles(
     if last_id is None:
         # 新增的源：只取最新一篇，避免发送大量历史文章
         new_entries = [entries[0]]
-        logger.info(
+        logger.debug(
             "No last_id for '%s', taking latest article only.",
             feed_name,
         )
@@ -71,18 +71,17 @@ def fetch_new_articles(
             new_entries.append(entry)
 
     if not new_entries:
-        logger.info("No new articles for '%s'.", feed_name)
+        logger.debug("No new articles for '%s'.", feed_name)
         return []
 
-    # 逆序：旧→新，保证邮件中阅读顺序正确
-    new_entries.reverse()
+    # 最新在前，方便第一时间看到最新内容
 
     articles: list[Article] = []
     for entry in new_entries:
         article = _parse_entry(entry, feed_name)
         articles.append(article)
 
-    logger.info(
+    logger.debug(
         "Found %d new article(s) for '%s'.",
         len(articles),
         feed_name,

@@ -104,7 +104,7 @@ class EmailNotifier(Notifier):
         host, port, user, password, to_email = self._resolve_config()
 
         total = sum(len(a) for a in articles.values())
-        subject = f"【RSS 更新】共 {total} 篇新文章"
+        subject = self._build_subject(articles, total)
 
         plain_body = self._build_plain_text(articles, total)
         html_body = self._build_html(articles, total)
@@ -144,18 +144,46 @@ class EmailNotifier(Notifier):
             msg: 构建好的邮件消息。
         """
         if port == 465:
-            logger.info("Connecting via SMTP_SSL (port %d)...", port)
+            logger.debug("Connecting via SMTP_SSL (port %d)...", port)
             with smtplib.SMTP_SSL(host, port, timeout=30) as server:
                 server.login(user, password)
                 server.sendmail(user, [to_email], msg.as_bytes())
         else:
-            logger.info("Connecting via SMTP + STARTTLS (port %d)...", port)
+            logger.debug("Connecting via SMTP + STARTTLS (port %d)...", port)
             with smtplib.SMTP(host, port, timeout=30) as server:
                 server.starttls()
                 server.login(user, password)
                 server.sendmail(user, [to_email], msg.as_bytes())
 
-        logger.info("Mail sent successfully.")
+        logger.debug("Mail sent successfully.")
+
+    @staticmethod
+    def _build_subject(articles: NewArticles, total: int) -> str:
+        """根据源数量和文章数量动态生成邮件标题。
+
+        规则：
+        - 1 个源，1 篇文章：【RSS 更新】源名：文章标题
+        - 1 个源，多篇文章：【RSS 更新】源名：N 篇新文章
+        - 多个源：【RSS 更新】N 篇新文章（源1、源2）
+
+        Args:
+            articles: 按 RSS 源分组的新文章。
+            total: 新文章总数。
+
+        Returns:
+            格式化后的邮件标题。
+        """
+        feed_names = list(articles.keys())
+
+        if len(feed_names) == 1:
+            name = feed_names[0]
+            feed_articles = articles[name]
+            if len(feed_articles) == 1:
+                return f"【RSS 更新】{name}：{feed_articles[0].title}"
+            return f"【RSS 更新】{name}：{len(feed_articles)} 篇新文章"
+
+        names = "、".join(feed_names)
+        return f"【RSS 更新】{total} 篇新文章（{names}）"
 
     @staticmethod
     def _build_plain_text(articles: NewArticles, total: int) -> str:
@@ -214,30 +242,33 @@ class EmailNotifier(Notifier):
             for article in feed_articles:
                 published = article.published or "未知"
                 if article.link:
-                    link_html = (
+                    title_html = (
                         f'<a href="{article.link}" '
-                        f'style="color:#1a73e8;text-decoration:none;">'
-                        f"查看原文 →</a>"
+                        f'style="color:#1a73e8;text-decoration:none;'
+                        f'font-size:16px;font-weight:600;'
+                        f'line-height:1.4;">'
+                        f"{article.title}</a>"
                     )
                 else:
-                    link_html = '<span style="color:#999999;">无链接</span>'
+                    title_html = (
+                        f'<span style="font-size:16px;font-weight:600;'
+                        f'line-height:1.4;">{article.title}</span>'
+                    )
                 article_html_parts.append(
                     f'<div style="margin-bottom:20px;padding-bottom:16px;'
                     f'border-bottom:1px solid #eeeeee;">'
-                    f'<div style="font-size:15px;font-weight:500;'
-                    f'margin-bottom:8px;">{article.title}</div>'
-                    f'<div style="font-size:13px;color:#666666;'
-                    f'margin-bottom:8px;">发布时间：{published}</div>'
-                    f'<div style="font-size:13px;">{link_html}</div>'
+                    f'<div style="margin-bottom:6px;">{title_html}</div>'
+                    f'<div style="font-size:12px;color:#999999;">'
+                    f"{published}</div>"
                     f"</div>"
                 )
             articles_html = "\n".join(article_html_parts)
             sections.append(
                 f'<div style="margin-bottom:32px;">'
-                f'<h2 style="font-size:18px;color:#1a1a1a;'
+                f'<h2 style="font-size:16px;font-weight:700;color:#1a1a1a;'
                 f"border-bottom:2px solid #1a73e8;"
                 f'padding-bottom:8px;margin-bottom:16px;">'
-                f"📚 {feed_name}</h2>"
+                f"{feed_name}</h2>"
                 f"{articles_html}"
                 f"</div>"
             )
