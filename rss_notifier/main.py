@@ -45,10 +45,9 @@ def run(first_run: bool = False, force_send: bool = False) -> bool:
     state = StateManager()
     state.load()
 
-    # 强制发送：跳过首次运行检测，直接获取文章并发送
+    # 强制发送：忽略 state，取每个源最新一篇文章发送，不更新 state
     if force_send:
-        print("Force send mode enabled.\n")
-        return _check_and_notify(state)
+        return _force_send()
 
     # 自动检测首次运行
     if first_run or state.is_empty:
@@ -91,6 +90,64 @@ def _init_state(state: StateManager) -> bool:
     state.save()
     print("\nState initialized. No notifications sent.")
     return not has_failure
+
+
+def _force_send() -> bool:
+    """强制发送：忽略 state，取每个源最新一篇文章发送邮件。
+
+    不读取 state.json，不更新 state.json。
+    仅用于测试 SMTP 和邮件模板。
+
+    Returns:
+        True 表示全部成功，False 表示部分源失败。
+    """
+    print("Force send mode enabled.")
+    print("Ignoring state.json.\n")
+    print(f"Fetching latest article from {len(RSS_FEEDS)} RSS feed(s)...\n")
+
+    all_new: NewArticles = {}
+    failed_feeds: list[str] = []
+
+    for feed_config in RSS_FEEDS:
+        feed_name: str = feed_config["name"]
+        feed_url: str = feed_config["url"]
+
+        try:
+            # last_id=None 表示忽略 state，只取最新一篇
+            articles = fetch_new_articles(feed_name, feed_url, last_id=None)
+            if articles:
+                all_new[feed_name] = articles
+                print(f"  ✓ {feed_name}: {articles[0].title}")
+            else:
+                print(f"  ✓ {feed_name}: no articles found")
+        except Exception:
+            logger.exception("Failed to fetch '%s'.", feed_name)
+            print(f"  ✗ {feed_name}: failed")
+            failed_feeds.append(feed_name)
+
+    # 发送邮件
+    if all_new:
+        total = sum(len(a) for a in all_new.values())
+        print(f"\nPreparing email...")
+        print("Sending email...")
+        try:
+            notifier = EmailNotifier()
+            notifier.send(all_new)
+            print("Email sent successfully.")
+        except Exception:
+            logger.exception("Failed to send notification.")
+            print("Failed to send email.")
+    else:
+        print("\nNo articles found in any feed.")
+
+    # 不更新 state
+    print("\nState not modified (force send mode).")
+
+    if failed_feeds:
+        print(f"Failed feeds: {', '.join(failed_feeds)}")
+        return False
+
+    return True
 
 
 def _check_and_notify(state: StateManager) -> bool:
