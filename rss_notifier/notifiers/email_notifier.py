@@ -36,14 +36,14 @@ class EmailNotifier(Notifier):
     * ``SMTP_PORT`` - SMTP 端口（465 或 587）
     * ``SMTP_USER`` - 登录用户名
     * ``SMTP_PASS`` - 登录密码
-    * ``TO_EMAIL``  - 收件人地址
+    * ``TO_EMAIL``  - 收件人地址（多个用逗号分隔）
 
     Args:
         host: SMTP 主机，默认读取 ``SMTP_HOST`` 环境变量。
         port: SMTP 端口，默认读取 ``SMTP_PORT`` 环境变量。
         user: 登录用户，默认读取 ``SMTP_USER`` 环境变量。
         password: 登录密码，默认读取 ``SMTP_PASS`` 环境变量。
-        to_email: 收件人，默认读取 ``TO_EMAIL`` 环境变量。
+        to_emails: 收件人列表，默认读取 ``TO_EMAIL`` 环境变量（逗号分隔）。
     """
 
     def __init__(
@@ -52,19 +52,19 @@ class EmailNotifier(Notifier):
         port: int | None = None,
         user: str | None = None,
         password: str | None = None,
-        to_email: str | None = None,
+        to_emails: list[str] | None = None,
     ) -> None:
         self._host: str | None = host
         self._port: int | None = port
         self._user: str | None = user
         self._password: str | None = password
-        self._to_email: str | None = to_email
+        self._to_emails: list[str] | None = to_emails
 
-    def _resolve_config(self) -> tuple[str, int, str, str, str]:
+    def _resolve_config(self) -> tuple[str, int, str, str, list[str]]:
         """从环境变量解析 SMTP 配置。
 
         Returns:
-            (host, port, user, password, to_email) 元组。
+            (host, port, user, password, to_emails) 元组。
 
         Raises:
             ValueError: 必需的环境变量缺失时抛出。
@@ -73,7 +73,11 @@ class EmailNotifier(Notifier):
         port = self._port or int(os.environ.get("SMTP_PORT", "0"))
         user = self._user or os.environ.get("SMTP_USER", "")
         password = self._password or os.environ.get("SMTP_PASS", "")
-        to_email = self._to_email or os.environ.get("TO_EMAIL", "")
+        to_emails = self._to_emails or [
+            e.strip()
+            for e in os.environ.get("TO_EMAIL", "").split(",")
+            if e.strip()
+        ]
 
         missing: list[str] = []
         if not host:
@@ -84,14 +88,14 @@ class EmailNotifier(Notifier):
             missing.append("SMTP_USER")
         if not password:
             missing.append("SMTP_PASS")
-        if not to_email:
+        if not to_emails:
             missing.append("TO_EMAIL")
 
         if missing:
             msg = f"Missing required environment variables: {', '.join(missing)}"
             raise ValueError(msg)
 
-        return host, port, user, password, to_email
+        return host, port, user, password, to_emails
 
     def send(self, articles: NewArticles) -> None:
         """发送 HTML + 纯文本邮件。
@@ -103,7 +107,7 @@ class EmailNotifier(Notifier):
             ValueError: SMTP 配置缺失。
             smtplib.SMTPException: SMTP 通信失败。
         """
-        host, port, user, password, to_email = self._resolve_config()
+        host, port, user, password, to_emails = self._resolve_config()
 
         total = sum(len(a) for a in articles.values())
         subject = self._build_subject(articles, total)
@@ -114,14 +118,14 @@ class EmailNotifier(Notifier):
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = user
-        msg["To"] = to_email
+        msg["To"] = ", ".join(to_emails)
         msg["Date"] = formatdate(localtime=True)
         msg["Message-ID"] = make_msgid(domain="rss-mail-notifier")
 
         msg.attach(MIMEText(plain_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        self._send_smtp(host, port, user, password, to_email, msg)
+        self._send_smtp(host, port, user, password, to_emails, msg)
 
     def _send_smtp(
         self,
@@ -129,7 +133,7 @@ class EmailNotifier(Notifier):
         port: int,
         user: str,
         password: str,
-        to_email: str,
+        to_emails: list[str],
         msg: MIMEMultipart,
     ) -> None:
         """建立 SMTP 连接并发送邮件。
@@ -142,20 +146,20 @@ class EmailNotifier(Notifier):
             port: SMTP 端口。
             user: 登录用户名。
             password: 登录密码。
-            to_email: 收件人地址。
+            to_emails: 收件人地址列表。
             msg: 构建好的邮件消息。
         """
         if port == 465:
             logger.debug("Connecting via SMTP_SSL (port %d)...", port)
             with smtplib.SMTP_SSL(host, port, timeout=30) as server:
                 server.login(user, password)
-                server.sendmail(user, [to_email], msg.as_bytes())
+                server.sendmail(user, to_emails, msg.as_bytes())
         else:
             logger.debug("Connecting via SMTP + STARTTLS (port %d)...", port)
             with smtplib.SMTP(host, port, timeout=30) as server:
                 server.starttls()
                 server.login(user, password)
-                server.sendmail(user, [to_email], msg.as_bytes())
+                server.sendmail(user, to_emails, msg.as_bytes())
 
         logger.debug("Mail sent successfully.")
 

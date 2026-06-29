@@ -7,6 +7,7 @@
 ## ✨ 功能
 
 - ✅ 支持多个 RSS / Atom 源
+- ✅ 支持多个收件人（逗号分隔）
 - ✅ 自动去重，不会收到重复邮件
 - ✅ 多个 RSS 更新合并为一封邮件
 - ✅ HTML 邮件，排版清晰
@@ -31,7 +32,7 @@
 | `SMTP_PORT` | SMTP 端口 | `465` |
 | `SMTP_USER` | 登录用户名（通常是邮箱） | `you@163.com` |
 | `SMTP_PASS` | 密码或授权码 | `your_auth_code` |
-| `TO_EMAIL` | 收件人邮箱 | `you@example.com` |
+| `TO_EMAIL` | 收件人邮箱（多个用逗号分隔） | `a@example.com,b@example.com` |
 
 ### 3. 启用 GitHub Actions
 
@@ -126,12 +127,12 @@ cd rss-mail-notifier
 # 安装依赖
 pip install -r requirements.txt
 
-# 设置环境变量
+# 设置环境变量（多个收件人用逗号分隔）
 export SMTP_HOST="smtp.163.com"
 export SMTP_PORT="465"
 export SMTP_USER="you@163.com"
 export SMTP_PASS="your_auth_code"
-export TO_EMAIL="you@example.com"
+export TO_EMAIL="a@example.com,b@example.com"
 
 # 运行（首次只初始化状态）
 python rss_notifier/main.py
