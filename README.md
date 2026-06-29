@@ -46,7 +46,7 @@
 
 ### 5. 自动运行
 
-配置完成后，每小时自动检查一次 RSS 更新。
+配置完成后，每 6 小时自动检查一次 RSS 更新。
 
 你也可以随时通过 **workflow_dispatch** 手动触发。
 
@@ -109,7 +109,7 @@ rss-mail-notifier
 │   └── notifiers/
 │       ├── __init__.py          # Notifier 抽象基类 + Article 数据类
 │       └── email_notifier.py    # 邮件通知实现
-├── state.json                   # 运行状态（自动维护，Git 追踪）
+├── state.json                   # 运行状态（自动维护，由 GitHub Actions 提交到 Git）
 ├── requirements.txt             # Python 依赖
 ├── README.md
 ├── LICENSE
@@ -167,10 +167,6 @@ class TelegramNotifier(Notifier):
 - [ ] 企业微信
 - [ ] Server 酱
 - [ ] AI 摘要
-
-## 📸 运行截图
-
-> TODO
 
 ## 📄 License
 

@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import logging
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 
 import feedparser
@@ -40,7 +42,17 @@ def fetch_new_articles(
     """
     logger.debug("Fetching: %s (%s)", feed_name, feed_url)
 
-    feed = feedparser.parse(feed_url)
+    req = urllib.request.Request(
+        feed_url, headers={"User-Agent": "rss-mail-notifier/1.0"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw_data = resp.read()
+    except urllib.error.URLError as e:
+        msg = f"Failed to fetch feed '{feed_name}': {e}"
+        raise ValueError(msg) from e
+
+    feed = feedparser.parse(raw_data)
 
     if feed.bozo and not feed.entries:
         msg = f"Failed to parse feed '{feed_name}': {feed.bozo_exception}"
