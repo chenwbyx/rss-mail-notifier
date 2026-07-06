@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -16,6 +17,13 @@ import feedparser
 from rss_notifier.notifiers import Article
 
 logger = logging.getLogger(__name__)
+
+# 可重试的 HTTP 状态码（服务端临时错误）
+_RETRYABLE_STATUS_CODES = {502, 503, 504}
+
+# 重试配置
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 1.0  # 秒，指数退避基数
 
 
 def fetch_new_articles(
@@ -45,12 +53,8 @@ def fetch_new_articles(
     req = urllib.request.Request(
         feed_url, headers={"User-Agent": "rss-mail-notifier/1.0"}
     )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            raw_data = resp.read()
-    except urllib.error.URLError as e:
-        msg = f"Failed to fetch feed '{feed_name}': {e}"
-        raise ValueError(msg) from e
+
+    raw_data = _fetch_with_retry(req, feed_name)
 
     feed = feedparser.parse(raw_data)
 
@@ -99,6 +103,57 @@ def fetch_new_articles(
         feed_name,
     )
     return articles
+
+
+def _fetch_with_retry(req: urllib.request.Request, feed_name: str) -> bytes:
+    """带重试的 HTTP 请求。
+
+    对临时性错误（502/503/504、网络层错误）自动重试，
+    指数退避（1s, 2s, 4s）。客户端错误（404/403 等）不重试。
+
+    Args:
+        req: 请求对象。
+        feed_name: RSS 源名称（用于日志）。
+
+    Returns:
+        响应体字节数据。
+
+    Raises:
+        ValueError: 重试耗尽后仍失败。
+    """
+    last_error: Exception | None = None
+
+    for attempt in range(1, _MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            last_error = e
+            if e.code in _RETRYABLE_STATUS_CODES and attempt < _MAX_RETRIES:
+                delay = _RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    "Feed '%s' returned %d, retrying in %.0fs (%d/%d)...",
+                    feed_name, e.code, delay, attempt, _MAX_RETRIES,
+                )
+                time.sleep(delay)
+                continue
+            # 不可重试的状态码或最后一次重试
+            break
+        except urllib.error.URLError as e:
+            # 网络层错误（超时、DNS 失败等）可重试
+            last_error = e
+            if attempt < _MAX_RETRIES:
+                delay = _RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    "Feed '%s' network error: %s, retrying in %.0fs (%d/%d)...",
+                    feed_name, e.reason, delay, attempt, _MAX_RETRIES,
+                )
+                time.sleep(delay)
+                continue
+            break
+
+    msg = f"Failed to fetch feed '{feed_name}': {last_error}"
+    raise ValueError(msg) from last_error
 
 
 def _parse_entry(entry: object, feed_name: str) -> Article:

@@ -187,6 +187,7 @@ def _check_and_notify(state: StateManager) -> bool:
             failed_feeds.append(feed_name)
 
     # 发送通知
+    email_sent = False
     if all_new:
         total = sum(len(a) for a in all_new.values())
         print(f"\nFound {total} new article(s) total.")
@@ -195,6 +196,7 @@ def _check_and_notify(state: StateManager) -> bool:
             notifier = EmailNotifier()
             notifier.send(all_new)
             print("Email sent successfully.")
+            email_sent = True
         except Exception:
             logger.exception("Failed to send notification.")
             print("Failed to send email.")
@@ -207,6 +209,11 @@ def _check_and_notify(state: StateManager) -> bool:
     # 报告失败的源
     if failed_feeds:
         print(f"\nFailed feeds: {', '.join(failed_feeds)}")
+        if email_sent:
+            logger.warning(
+                "Some feeds failed but email was sent with remaining articles."
+            )
+            return True
         return False
 
     return True
