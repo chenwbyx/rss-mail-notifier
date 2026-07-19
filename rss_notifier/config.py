@@ -15,11 +15,6 @@ from __future__ import annotations
 RSS_FEEDS: list[dict[str, str]] = [
     # ── AI / ML ──────────────────────────────────────────
     {
-        "name": "Hugging Face",
-        "url": "https://huggingface.co/blog/feed.xml",
-        "category": "AI / ML",
-    },
-    {
         "name": "One Useful Thing",
         "url": "https://www.oneusefulthing.org/feed",
         "category": "AI / ML",
