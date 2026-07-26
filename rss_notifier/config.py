@@ -48,11 +48,6 @@ RSS_FEEDS: list[dict[str, str]] = [
     },
     # ── 综合技术 ─────────────────────────────────────────
     {
-        "name": "InfoQ",
-        "url": "https://www.infoq.com/feed/",
-        "category": "综合技术",
-    },
-    {
         "name": "阮一峰",
         "url": "https://www.ruanyifeng.com/blog/atom.xml",
         "category": "综合技术",
