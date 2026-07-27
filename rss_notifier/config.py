@@ -74,9 +74,4 @@ RSS_FEEDS: list[dict[str, str]] = [
         "url": "https://60s.viki.moe/v2/60s/rss",
         "category":  "中文社区",
     },
-    {
-        "name": "V2EX",
-        "url": "https://www.v2ex.com/index.xml",
-        "category": "中文社区",
-    },
 ]
