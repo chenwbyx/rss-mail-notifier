@@ -13,12 +13,6 @@
 from __future__ import annotations
 
 RSS_FEEDS: list[dict[str, str]] = [
-    # ── AI / ML ──────────────────────────────────────────
-    {
-        "name": "One Useful Thing",
-        "url": "https://www.oneusefulthing.org/feed",
-        "category": "AI / ML",
-    },
     # ── 软件工程 / 架构 ──────────────────────────────────
     {
         "name": "Martin Fowler",
@@ -34,17 +28,6 @@ RSS_FEEDS: list[dict[str, str]] = [
         "name": "The Pragmatic Engineer",
         "url": "https://blog.pragmaticengineer.com/rss/",
         "category": "软件工程 / 架构",
-    },
-    # ── 云计算 / 基础设施 ────────────────────────────────
-    {
-        "name": "Cloudflare Blog",
-        "url": "https://blog.cloudflare.com/rss/",
-        "category": "云计算 / 基础设施",
-    },
-    {
-        "name": "AWS News Blog",
-        "url": "https://aws.amazon.com/blogs/aws/feed/",
-        "category": "云计算 / 基础设施",
     },
     # ── 综合技术 ─────────────────────────────────────────
     {
