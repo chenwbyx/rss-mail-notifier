@@ -13,22 +13,6 @@
 from __future__ import annotations
 
 RSS_FEEDS: list[dict[str, str]] = [
-    # ── 软件工程 / 架构 ──────────────────────────────────
-    {
-        "name": "Martin Fowler",
-        "url": "https://martinfowler.com/feed.atom",
-        "category": "软件工程 / 架构",
-    },
-    {
-        "name": "High Scalability",
-        "url": "http://highscalability.com/rss",
-        "category": "软件工程 / 架构",
-    },
-    {
-        "name": "The Pragmatic Engineer",
-        "url": "https://blog.pragmaticengineer.com/rss/",
-        "category": "软件工程 / 架构",
-    },
     # ── 综合技术 ─────────────────────────────────────────
     {
         "name": "阮一峰",
@@ -45,16 +29,5 @@ RSS_FEEDS: list[dict[str, str]] = [
         "name": "Benedict Evans",
         "url": "https://www.ben-evans.com/benedictevans?format=rss",
         "category": "技术博客 / 独立作者",
-    },
-    # ── 中文社区 ─────────────────────────────────────────
-    {
-        "name": "少数派",
-        "url": "https://sspai.com/feed",
-        "category": "中文社区",
-    },
-    {
-        "name": "60s News",
-        "url": "https://60s.viki.moe/v2/60s/rss",
-        "category":  "中文社区",
     },
 ]
