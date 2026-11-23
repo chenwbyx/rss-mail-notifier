@@ -19,15 +19,4 @@ RSS_FEEDS: list[dict[str, str]] = [
         "url": "https://www.ruanyifeng.com/blog/atom.xml",
         "category": "综合技术",
     },
-    # ── 技术博客 / 独立作者 ──────────────────────────────
-    {
-        "name": "Simon Willison",
-        "url": "https://simonwillison.net/atom/everything/",
-        "category": "技术博客 / 独立作者",
-    },
-    {
-        "name": "Benedict Evans",
-        "url": "https://www.ben-evans.com/benedictevans?format=rss",
-        "category": "技术博客 / 独立作者",
-    },
 ]
